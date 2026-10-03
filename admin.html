@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XONE • Admin Panel</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+
+  :root {
+    --bg: #0a0a0a; --surface: #111111; --surface2: #181818; --surface3: #222222;
+    --text: #ffffff; --text2: #8a8a8a; --border: #262626;
+    --neon: #00ffd5; --neon2: #ff00e5;
+    --danger: #ff3b5c; --success: #00e676;
+  }
+
+  body.light {
+    --bg: #f4f4f4; --surface: #ffffff; --surface2: #f0f0f0; --surface3: #e4e4e4;
+    --text: #0a0a0a; --text2: #666666; --border: #d8d8d8;
+  }
+
+  body { background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; position: relative; transition: background 0.4s, color 0.4s; }
+
+  .grid-bg {
+    position: fixed; inset: 0;
+    background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 60px 60px; opacity: 0.25; z-index: 0; pointer-events: none;
+    mask-image: radial-gradient(circle at 50% 0%, #000 20%, transparent 75%);
+  }
+
+  .glow-orb { position: fixed; border-radius: 50%; filter: blur(90px); z-index: 0; pointer-events: none; opacity: 0.35; }
+  .glow-1 { width: 400px; height: 400px; background: var(--neon); top: -120px; left: -120px; animation: float1 12s ease-in-out infinite; }
+  .glow-2 { width: 350px; height: 350px; background: var(--neon2); bottom: -100px; right: -100px; animation: float2 14s ease-in-out infinite; }
+
+  @keyframes float1 { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(60px, 40px); } }
+  @keyframes float2 { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(-50px, -60px); } }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes slideIn { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: translateX(0); } }
+  @keyframes shake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-10px); } 40%, 80% { transform: translateX(10px); } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .shell { position: relative; z-index: 1; max-width: 1180px; margin: 0 auto; padding: 24px 20px 80px; }
+
+  .topbar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 22px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 18px; backdrop-filter: blur(12px); animation: fadeUp 0.5s ease;
+  }
+
+  .brand { display: flex; align-items: center; gap: 12px; font-size: 1.35rem; font-weight: 700; letter-spacing: -0.5px; }
+
+  .brand-mark {
+    width: 36px; height: 36px; border-radius: 11px;
+    background: linear-gradient(135deg, var(--neon), var(--neon2));
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 900; color: #0a0a0a; font-size: 1.1rem;
+    box-shadow: 0 0 20px rgba(0, 255, 213, 0.4);
+  }
+
+  .topbar-actions { display: flex; align-items: center; gap: 10px; }
+
+  .icon-btn {
+    width: 40px; height: 40px; border-radius: 12px;
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem; transition: all 0.25s;
+  }
+
+  .icon-btn:hover { border-color: var(--neon); color: var(--neon); transform: translateY(-2px); }
+
+  .logout-btn {
+    padding: 8px 16px; border-radius: 12px;
+    background: transparent; border: 1px solid var(--danger);
+    color: var(--danger); font-size: 0.78rem; font-weight: 700;
+    cursor: pointer; transition: all 0.25s; letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .logout-btn:hover { background: var(--danger); color: #fff; }
+
+  .login-view {
+    display: flex; align-items: center; justify-content: center;
+    min-height: calc(100vh - 140px); animation: fadeIn 0.5s ease;
+  }
+
+  .login-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 24px; padding: 40px; width: 100%; max-width: 420px;
+    box-shadow: 0 0 60px rgba(0, 255, 213, 0.08);
+    animation: fadeUp 0.6s ease; position: relative; overflow: hidden;
+  }
+
+  .login-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--neon), var(--neon2));
+  }
+
+  .login-card h1 { font-size: 1.6rem; font-weight: 800; margin-bottom: 8px; letter-spacing: -0.5px; }
+  .login-card .sub { font-size: 0.85rem; color: var(--text2); margin-bottom: 28px; }
+
+  .login-card.shake { animation: shake 0.5s ease; }
+
+  .field { margin-bottom: 18px; }
+
+  .field label {
+    display: block; font-size: 0.75rem; font-weight: 700;
+    color: var(--text2); text-transform: uppercase;
+    letter-spacing: 1px; margin-bottom: 8px;
+  }
+
+  .field input {
+    width: 100%; padding: 14px 16px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 13px; font-size: 0.95rem; color: var(--text);
+    outline: none; transition: all 0.25s; font-family: inherit;
+  }
+
+  .field input:focus { border-color: var(--neon); box-shadow: 0 0 0 3px rgba(0, 255, 213, 0.12); }
+
+  .login-btn {
+    width: 100%; padding: 14px; border-radius: 13px; border: none;
+    background: linear-gradient(135deg, var(--neon), var(--neon2));
+    color: #0a0a0a; font-weight: 800; font-size: 0.92rem;
+    cursor: pointer; transition: all 0.25s; letter-spacing: 0.5px;
+    text-transform: uppercase; margin-top: 8px;
+  }
+
+  .login-btn:hover { transform: translateY(-2px); box-shadow: 0 0 30px rgba(0, 255, 213, 0.4); }
+  .login-btn:active { transform: translateY(0); }
+  .login-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  .login-hint { text-align: center; font-size: 0.75rem; color: var(--text2); margin-top: 20px; }
+
+  .admin-view { display: none; animation: fadeIn 0.4s ease; }
+  .admin-view.active { display: block; }
+
+  .admin-tabs {
+    display: flex; gap: 6px; background: var(--surface);
+    padding: 6px; border-radius: 16px; border: 1px solid var(--border);
+    margin: 28px 0 24px; overflow-x: auto; animation: fadeUp 0.5s ease;
+  }
+
+  .tab {
+    padding: 11px 20px; border-radius: 11px; background: transparent;
+    border: none; color: var(--text2); font-weight: 700;
+    font-size: 0.82rem; cursor: pointer; white-space: nowrap;
+    transition: all 0.25s; letter-spacing: 0.3px;
+  }
+
+  .tab:hover { color: var(--text); background: var(--surface2); }
+
+  .tab.active {
+    background: linear-gradient(135deg, var(--neon), var(--neon2));
+    color: #0a0a0a;
+  }
+
+  .panel { display: none; animation: fadeUp 0.4s ease; }
+  .panel.active { display: block; }
+
+  .form-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 22px; padding: 28px; max-width: 720px;
+  }
+
+  .form-card h2 { font-size: 1.25rem; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.5px; }
+  .form-card .hint { font-size: 0.82rem; color: var(--text2); margin-bottom: 24px; }
+
+  .field-row { margin-bottom: 18px; }
+  .field-row label {
+    display: block; font-size: 0.78rem; font-weight: 700;
+    color: var(--text2); text-transform: uppercase;
+    letter-spacing: 1px; margin-bottom: 8px;
+  }
+
+  .field-row input, .field-row textarea {
+    width: 100%; padding: 13px 16px; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: 13px;
+    font-size: 0.92rem; color: var(--text); outline: none;
+    transition: all 0.25s; font-family: inherit;
+  }
+
+  .field-row input:focus, .field-row textarea:focus {
+    border-color: var(--neon); box-shadow: 0 0 0 3px rgba(0, 255, 213, 0.12);
+  }
+
+  .field-row textarea { resize: vertical; min-height: 90px; }
+
+  .img-drop {
+    width: 100%; max-width: 260px; height: 160px;
+    border-radius: 16px; border: 2px dashed var(--border);
+    background: var(--surface2); display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 8px;
+    cursor: pointer; position: relative; overflow: hidden; transition: all 0.25s;
+  }
+
+  .img-drop:hover { border-color: var(--neon); }
+  .img-drop.has-img { border-style: solid; border-color: var(--neon); }
+  .img-drop img { width: 100%; height: 100%; object-fit: cover; display: none; }
+  .img-drop.has-img img { display: block; }
+
+  .img-drop .ph {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 6px; color: var(--text2); font-size: 0.78rem; font-weight: 600;
+  }
+
+  .img-drop.has-img .ph { display: none; }
+
+  .img-drop .ph .plus {
+    width: 40px; height: 40px; border-radius: 12px;
+    background: linear-gradient(135deg, var(--neon), var(--neon2));
+    color: #0a0a0a; display: flex; align-items: center;
+    justify-content: center; font-size: 1.4rem; font-weight: 900;
+  }
+
+  .img-drop .rm {
+    position: absolute; top: 8px; right: 8px;
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--danger); color: #fff; border: none;
+    cursor: pointer; display: none; align-items: center;
+    justify-content: center; font-size: 0.9rem; font-weight: 900;
+  }
+
+  .img-drop.has-img .rm { display: flex; }
+
+  .actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 24px; }
+
+  .btn {
+    padding: 13px 26px; border-radius: 13px; border: none;
+    font-weight: 800; font-size: 0.85rem; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 8px;
+    transition: all 0.25s; letter-spacing: 0.3px;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--neon), var(--neon2));
+    color: #0a0a0a;
+  }
+
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 0 28px rgba(0, 255, 213, 0.4); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+  .btn-ghost {
+    background: transparent; color: var(--text); border: 1px solid var(--border);
+  }
+
+  .btn-ghost:hover { border-color: var(--neon); color: var(--neon); }
+
+  .btn-danger {
+    background: transparent; color: var(--danger);
+    border: 1px solid var(--danger); padding: 8px 14px;
+    font-size: 0.75rem; border-radius: 10px; font-weight: 700;
+    cursor: pointer; transition: all 0.2s;
+  }
+
+  .btn-danger:hover { background: var(--danger); color: #fff; }
+
+  .monitor-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px; margin-bottom: 24px;
+  }
+
+  .m-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 18px; padding: 22px; position: relative;
+    overflow: hidden; animation: fadeUp 0.5s ease backwards;
+  }
+
+  .m-card::before { content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 100%; background: linear-gradient(180deg, var(--neon), var(--neon2)); }
+
+  .m-card .v {
+    font-size: 2rem; font-weight: 800; letter-spacing: -1px;
+    background: linear-gradient(135deg, var(--neon), var(--neon2));
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  .m-card .l {
+    font-size: 0.75rem; color: var(--text2); text-transform: uppercase;
+    letter-spacing: 1.2px; margin-top: 4px; font-weight: 700;
+  }
+
+  .list-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 22px; padding: 22px;
+  }
+
+  .section-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+  .section-head h2 { font-size: 1.3rem; font-weight: 700; letter-spacing: -0.5px; }
+  .section-head .count {
+    font-size: 0.78rem; color: var(--text2); background: var(--surface2);
+    padding: 6px 14px; border-radius: 30px; border: 1px solid var(--border); font-weight: 600;
+  }
+
+  .apk-row {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px; border-radius: 16px; background: var(--surface2);
+    border: 1px solid var(--border); margin-bottom: 12px;
+    transition: all 0.25s; animation: slideIn 0.4s ease backwards;
+  }
+
+  .apk-row:hover { border-color: var(--neon); transform: translateX(4px); }
+  .apk-row:last-child { margin-bottom: 0; }
+
+  .apk-row .thumb {
+    width: 52px; height: 52px; border-radius: 14px;
+    background: var(--surface3); display: flex;
+    align-items: center; justify-content: center;
+    font-weight: 900; color: var(--neon); font-size: 1.3rem;
+    flex-shrink: 0; overflow: hidden; border: 1px solid var(--border);
+  }
+
+  .apk-row .thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .apk-row .info { flex: 1; min-width: 0; }
+  .apk-row .info h4 { font-size: 0.95rem; font-weight: 700; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .apk-row .info p { font-size: 0.78rem; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .apk-row .info .link {
+    font-size: 0.72rem; color: var(--neon); font-weight: 700;
+    margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  .empty { text-align: center; padding: 60px 20px; color: var(--text2); }
+
+  .empty .big {
+    font-size: 3rem; font-weight: 900;
+    background: linear-gradient(135deg, var(--neon), var(--neon2));
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 12px; opacity: 0.5;
+  }
+
+  .toast {
+    position: fixed; bottom: 24px; right: 24px;
+    padding: 14px 24px; border-radius: 14px;
+    background: var(--surface); border: 1px solid var(--neon);
+    color: var(--text); font-weight: 700; font-size: 0.85rem;
+    box-shadow: 0 0 30px rgba(0, 255, 213, 0.2);
+    z-index: 9999; opacity: 0; transform: translateX(120%);
+    transition: all 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+    max-width: 90vw;
+  }
+
+  .toast.show { opacity: 1; transform: translateX(0); }
+  .toast.err { border-color: var(--danger); box-shadow: 0 0 30px rgba(255, 59, 92, 0.25); }
+
+  @media (max-width: 640px) {
+    .shell { padding: 16px 14px 60px; }
+    .topbar { padding: 12px 16px; border-radius: 16px; }
+    .brand { font-size: 1.15rem; }
+    .login-card { padding: 28px 22px; border-radius: 20px; }
+    .form-card { padding: 20px; border-radius: 18px; }
+    .admin-tabs { border-radius: 14px; }
+    .tab { padding: 10px 16px; font-size: 0.78rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="grid-bg"></div>
+<div class="glow-orb glow-1"></div>
+<div class="glow-orb glow-2"></div>
+
+<div class="shell">
+
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-mark">X</div>
+      <span>XONE Admin</span>
+    </div>
+    <div class="topbar-actions">
+      <a href="index.html" class="icon-btn" title="Back to site" style="text-decoration:none;">&#8592;</a>
+      <button class="icon-btn" id="themeBtn" title="Toggle theme">&#9788;</button>
+      <button class="logout-btn" id="logoutBtn" style="display:none">Logout</button>
+    </div>
+  </div>
+
+  <div class="login-view" id="loginView">
+    <div class="login-card" id="loginCard">
+      <h1>Admin Login</h1>
+      <p class="sub">Enter your credentials to access the control panel.</p>
+
+      <div class="field">
+        <label>Username</label>
+        <input type="text" id="loginUser" placeholder="Enter username" autocomplete="username">
+      </div>
+
+      <div class="field">
+        <label>Password</label>
+        <input type="password" id="loginPass" placeholder="Enter password" autocomplete="current-password">
+      </div>
+
+      <button class="login-btn" id="loginBtn">Sign In</button>
+      <p class="login-hint">Credentials are case-insensitive</p>
+    </div>
+  </div>
+
+  <div class="admin-view" id="adminView">
+    <div class="admin-tabs">
+      <button class="tab active" data-tab="upload">Upload APK</button>
+      <button class="tab" data-tab="manage">Manage APKs</button>
+      <button class="tab" data-tab="monitor">Monitoring</button>
+    </div>
+
+    <div class="panel active" id="panel-upload">
+      <div class="form-card">
+        <h2>Upload New APK</h2>
+        <p class="hint">Fill in the details. The download button will open the custom link you provide.</p>
+
+        <div class="field-row">
+          <label>APK Name</label>
+          <input type="text" id="fName" placeholder="e.g. WhatsApp Plus">
+        </div>
+
+        <div class="field-row">
+          <label>Version</label>
+          <input type="text" id="fVersion" placeholder="e.g. 9.0.1">
+        </div>
+
+        <div class="field-row">
+          <label>Custom Description</label>
+          <textarea id="fDesc" placeholder="Describe the APK, features, mods..."></textarea>
+        </div>
+
+        <div class="field-row">
+          <label>Custom Download Link</label>
+          <input type="url" id="fLink" placeholder="https://www.mediafire.com/file/...">
+        </div>
+
+        <div class="field-row">
+          <label>APK Image</label>
+          <div class="img-drop" id="imgDrop">
+            <img id="imgPreview" alt="">
+            <div class="ph">
+              <div class="plus">+</div>
+              <span>Select image</span>
+            </div>
+            <button class="rm" id="imgRemove" type="button">&times;</button>
+          </div>
+          <input type="file" id="imgInput" accept="image/*" hidden>
+        </div>
+
+        <div class="actions">
+          <button class="btn btn-primary" id="uploadBtn">Upload APK</button>
+          <button class="btn btn-ghost" id="clearFormBtn">Clear</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-manage">
+      <div class="list-card">
+        <div class="section-head">
+          <h2>All APKs</h2>
+          <span class="count" id="mCount">0 apps</span>
+        </div>
+        <div id="manageList"></div>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-monitor">
+      <div class="monitor-grid">
+        <div class="m-card">
+          <div class="v" id="mTotalApks">0</div>
+          <div class="l">Total APKs</div>
+        </div>
+        <div class="m-card">
+          <div class="v" id="mTotalDownloads">0</div>
+          <div class="l">Total Downloads</div>
+        </div>
+        <div class="m-card">
+          <div class="v" id="mTopApk">-</div>
+          <div class="l">Most Downloaded</div>
+        </div>
+        <div class="m-card">
+          <div class="v" id="mTopCount">0</div>
+          <div class="l">Top Downloads</div>
+        </div>
+      </div>
+
+      <div class="list-card">
+        <div class="section-head">
+          <h2>Download Ranking</h2>
+        </div>
+        <div id="rankList"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  const STORAGE_KEY = 'xone_apk_hub_data_v2';
+  const AUTH_KEY = 'xone_admin_session';
+  const ADMIN_USER = 'admin';
+  const ADMIN_PASS = 'admin123';
+
+  const state = { apks: [], theme: 'dark' };
+  const el = (id) => document.getElementById(id);
+
+  function toast(message, isError) {
+    const t = el('toast');
+    t.textContent = message;
+    t.className = 'toast show' + (isError ? ' err' : '');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  function formatDate(iso) {
+    if (!iso) return '-';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '-';
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  function escapeHtml(str) {
+    const d = document.createElement('div');
+    d.textContent = str == null ? '' : String(str);
+    return d.innerHTML;
+  }
+
+  function saveState() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+  }
+
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && Array.isArray(parsed.apks)) state.apks = parsed.apks;
+        if (parsed && parsed.theme) state.theme = parsed.theme;
+      }
+    } catch (e) {}
+  }
+
+  function isLoggedIn() {
+    try { return sessionStorage.getItem(AUTH_KEY) === '1'; } catch (e) { return false; }
+  }
+
+  function setLoggedIn(v) {
+    try {
+      if (v) sessionStorage.setItem(AUTH_KEY, '1');
+      else sessionStorage.removeItem(AUTH_KEY);
+    } catch (e) {}
+  }
+
+  function renderManage() {
+    const list = el('manageList');
+    el('mCount').textContent = state.apks.length + ' apps';
+
+    if (state.apks.length === 0) {
+      list.innerHTML = '<div class="empty"><div class="big">0</div><p>No APKs uploaded yet.</p></div>';
+      return;
+    }
+
+    list.innerHTML = state.apks.map((apk, index) => {
+      const thumb = apk.image
+        ? '<div class="thumb"><img src="' + apk.image + '" alt=""></div>'
+        : '<div class="thumb">' + escapeHtml((apk.name || '?').charAt(0).toUpperCase()) + '</div>';
+
+      return '<div class="apk-row" style="animation-delay:' + (index * 0.04) + 's">' +
+        thumb +
+        '<div class="info">' +
+          '<h4>' + escapeHtml(apk.name) + (apk.version ? ' <span style="color:var(--neon)">v' + escapeHtml(apk.version) + '</span>' : '') + '</h4>' +
+          '<p>' + escapeHtml(apk.description || 'No description') + '</p>' +
+          '<div class="link">' + escapeHtml(apk.link || 'No link set') + '</div>' +
+        '</div>' +
+        '<button class="btn-danger" data-id="' + escapeHtml(apk.id) + '">Delete</button>' +
+      '</div>';
+    }).join('');
+
+    list.querySelectorAll('.btn-danger').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        if (confirm('Delete this APK?')) deleteApk(btn.getAttribute('data-id'));
+      });
+    });
+  }
+
+  function renderMonitor() {
+    const totalApks = state.apks.length;
+    const totalDownloads = state.apks.reduce((sum, a) => sum + (a.downloads || 0), 0);
+
+    el('mTotalApks').textContent = totalApks;
+    el('mTotalDownloads').textContent = totalDownloads.toLocaleString();
+
+    const sorted = [...state.apks].sort((a, b) => (b.downloads || 0) - (a.downloads || 0));
+    const top = sorted[0];
+
+    el('mTopApk').textContent = top ? top.name : '-';
+    el('mTopCount').textContent = top ? (top.downloads || 0) : 0;
+
+    const rankList = el('rankList');
+    if (sorted.length === 0) {
+      rankList.innerHTML = '<div class="empty"><div class="big">0</div><p>No download data yet.</p></div>';
+      return;
+    }
+
+    rankList.innerHTML = sorted.map((apk, index) => {
+      const thumb = apk.image
+        ? '<div class="thumb"><img src="' + apk.image + '" alt=""></div>'
+        : '<div class="thumb">' + escapeHtml((apk.name || '?').charAt(0).toUpperCase()) + '</div>';
+
+      return '<div class="apk-row" style="animation-delay:' + (index * 0.04) + 's">' +
+        thumb +
+        '<div class="info">' +
+          '<h4>#' + (index + 1) + ' ' + escapeHtml(apk.name) + '</h4>' +
+          '<p>' + (apk.downloads || 0).toLocaleString() + ' downloads</p>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  function renderAll() {
+    renderManage();
+    renderMonitor();
+  }
+
+  function deleteApk(id) {
+    state.apks = state.apks.filter((a) => a.id !== id);
+    saveState();
+    renderAll();
+    toast('APK deleted.');
+  }
+
+  let uploadImageData = null;
+
+  function clearForm() {
+    el('fName').value = '';
+    el('fVersion').value = '';
+    el('fDesc').value = '';
+    el('fLink').value = '';
+    el('imgInput').value = '';
+    el('imgPreview').src = '';
+    el('imgDrop').classList.remove('has-img');
+    uploadImageData = null;
+  }
+
+  function setupImagePicker() {
+    const drop = el('imgDrop');
+    const input = el('imgInput');
+    const preview = el('imgPreview');
+    const remove = el('imgRemove');
+
+    drop.addEventListener('click', (e) => {
+      if (e.target === remove) return;
+      input.click();
+    });
+
+    input.addEventListener('change', () => {
+      const file = input.files[0];
+      if (!file) return;
+      if (!file.type.startsWith('image/')) { toast('Please select an image file.', true); return; }
+      if (file.size > 3 * 1024 * 1024) { toast('Image must be under 3MB.', true); return; }
+
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        uploadImageData = ev.target.result;
+        preview.src = uploadImageData;
+        drop.classList.add('has-img');
+      };
+      reader.readAsDataURL(file);
+    });
+
+    remove.addEventListener('click', (e) => {
+      e.stopPropagation();
+      uploadImageData = null;
+      preview.src = '';
+      input.value = '';
+      drop.classList.remove('has-img');
+    });
+  }
+
+  function uploadApk() {
+    const name = el('fName').value.trim();
+    const version = el('fVersion').value.trim();
+    const description = el('fDesc').value.trim();
+    const link = el('fLink').value.trim();
+
+    if (!name) { toast('APK name is required.', true); return; }
+    if (!link) { toast('Custom download link is required.', true); return; }
+    if (!/^https?:\/\//i.test(link)) { toast('Link must start with http:// or https://', true); return; }
+
+    const apk = {
+      id: 'apk_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+      name, version, description, link,
+      image: uploadImageData || '',
+      downloads: 0,
+      uploadedAt: new Date().toISOString()
+    };
+
+    state.apks.unshift(apk);
+    saveState();
+    renderAll();
+    clearForm();
+    toast('APK uploaded successfully.');
+  }
+
+  function switchTab(tabName) {
+    document.querySelectorAll('.tab').forEach((t) => {
+      t.classList.toggle('active', t.getAttribute('data-tab') === tabName);
+    });
+    document.querySelectorAll('.panel').forEach((p) => {
+      p.classList.toggle('active', p.id === 'panel-' + tabName);
+    });
+    if (tabName === 'manage') renderManage();
+    if (tabName === 'monitor') renderMonitor();
+  }
+
+  function applyTheme() {
+    document.body.classList.toggle('light', state.theme === 'light');
+    el('themeBtn').innerHTML = state.theme === 'light' ? '&#9790;' : '&#9788;';
+  }
+
+  function toggleTheme() {
+    state.theme = state.theme === 'dark' ? 'light' : 'dark';
+    saveState();
+    applyTheme();
+  }
+
+  function showAdmin() {
+    el('loginView').style.display = 'none';
+    el('adminView').classList.add('active');
+    el('logoutBtn').style.display = 'inline-block';
+    renderAll();
+  }
+
+  function showLogin() {
+    el('loginView').style.display = 'flex';
+    el('adminView').classList.remove('active');
+    el('logoutBtn').style.display = 'none';
+    el('loginUser').value = '';
+    el('loginPass').value = '';
+  }
+
+  function attemptLogin() {
+    const user = el('loginUser').value.trim().toLowerCase();
+    const pass = el('loginPass').value.trim().toLowerCase();
+
+    if (user === ADMIN_USER && pass === ADMIN_PASS) {
+      setLoggedIn(true);
+      toast('Login successful. Welcome, Admin.');
+      showAdmin();
+    } else {
+      const card = el('loginCard');
+      card.classList.remove('shake');
+      void card.offsetWidth;
+      card.classList.add('shake');
+      toast('Invalid credentials. Try again.', true);
+    }
+  }
+
+  function logout() {
+    setLoggedIn(false);
+    toast('Logged out.');
+    showLogin();
+  }
+
+  function init() {
+    loadState();
+    applyTheme();
+    setupImagePicker();
+    renderAll();
+
+    el('themeBtn').addEventListener('click', toggleTheme);
+    el('uploadBtn').addEventListener('click', uploadApk);
+    el('clearFormBtn').addEventListener('click', clearForm);
+    el('loginBtn').addEventListener('click', attemptLogin);
+    el('logoutBtn').addEventListener('click', logout);
+
+    el('loginPass').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') attemptLogin();
+    });
+    el('loginUser').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') el('loginPass').focus();
+    });
+
+    document.querySelectorAll('.tab').forEach((tab) => {
+      tab.addEventListener('click', () => switchTab(tab.getAttribute('data-tab')));
+    });
+
+    window.addEventListener('storage', (e) => {
+      if (e.key === STORAGE_KEY) {
+        loadState();
+        renderAll();
+      }
+    });
+
+    if (isLoggedIn()) showAdmin();
+    else showLogin();
+  }
+
+  document.addEventListener('DOMContentLoaded', init);
+})();
+</script>
+</body>
+</html>
